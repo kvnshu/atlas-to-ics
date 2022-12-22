@@ -12,7 +12,6 @@ from ics import Calendar, Event
 def document_initialised(driver):
     return driver.execute_script("return initialised")
 
-
 def get_courses():
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True)
@@ -42,18 +41,18 @@ def get_courses():
         weblogin_button.click()
 
         driver.switch_to.frame('duo_iframe')
-        duo_button = WebDriverWait(driver, timeout=10).until(
+        duo_button = WebDriverWait(driver, timeout=3).until(
             lambda d: d.find_element(by=By.CLASS_NAME, value="auth-button"))
         duo_button.click()
-
+        # driver.implicitly_wait(10)
+        WebDriverWait(driver, timeout=100).until(
+            lambda d: d.find_element(by=By.CLASS_NAME, value="nav-bar-links"))
     else:
         print("Log in button not found")
 
     # navigate to Schedule Builder
-    # WebDriverWait(driver, timeout=3).until(
-    #         lambda d: d.find_element(by=By.LINK_TEXT, value="Schedule Builder"))
-
-    #   (can I get (https://atlas.ai.umich.edu/schedule-builder/) or will this not work, in which case I have to find and click the link?)
+    driver.switch_to.default_content()
+    driver.get("https://atlas.ai.umich.edu/schedule-builder/")
     # get Academic Term from user
     # Select Academic Term form dropdown
     # wait for elements to render?
