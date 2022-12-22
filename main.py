@@ -16,27 +16,43 @@ def document_initialised(driver):
 def get_courses():
     chrome_options = Options()
     chrome_options.add_experimental_option("detach", True)
+    chrome_options.add_experimental_option(
+        'excludeSwitches', ['enable-logging'])
     driver = webdriver.Chrome(service=ChromeService(
         ChromeDriverManager().install()), options=chrome_options)
     driver.get("https://atlas.ai.umich.edu/")
 
-    # insert wait strategy?
-    # find and click Log in element
     login_button = WebDriverWait(driver, timeout=3).until(
         lambda d: d.find_element(by=By.LINK_TEXT, value="Log in"))
     if (login_button):
         print("Log in button found")
-        
         login_button.click()
-        # wait
-        # get UMID and UM Password from user
-        # find umid field
-        # find password field
-        # fill out login information fields
-        # find and click submit
+        uniqname = input("What is your uniqname?: ")
+        password = input("What is your password?: ")
+
+        uniqname_field = WebDriverWait(driver, timeout=3).until(
+            lambda d: d.find_element(by=By.ID, value="login"))
+        password_field = WebDriverWait(driver, timeout=3).until(
+            lambda d: d.find_element(by=By.ID, value="password"))
+        weblogin_button = WebDriverWait(driver, timeout=3).until(
+            lambda d: d.find_element(by=By.ID, value="loginSubmit"))
+
+        uniqname_field.send_keys(uniqname)
+        password_field.send_keys(password)
+        weblogin_button.click()
+
+        driver.switch_to.frame('duo_iframe')
+        duo_button = WebDriverWait(driver, timeout=10).until(
+            lambda d: d.find_element(by=By.CLASS_NAME, value="auth-button"))
+        duo_button.click()
+
     else:
         print("Log in button not found")
+
     # navigate to Schedule Builder
+    # WebDriverWait(driver, timeout=3).until(
+    #         lambda d: d.find_element(by=By.LINK_TEXT, value="Schedule Builder"))
+
     #   (can I get (https://atlas.ai.umich.edu/schedule-builder/) or will this not work, in which case I have to find and click the link?)
     # get Academic Term from user
     # Select Academic Term form dropdown
