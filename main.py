@@ -1,9 +1,11 @@
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support import expected_conditions as EC
 from ics import Calendar, Event
 
 # check if Schedule Builder is offline for scheduled maintenance. It will return online at 7:30 AM.
@@ -12,15 +14,8 @@ from ics import Calendar, Event
 def document_initialised(driver):
     return driver.execute_script("return initialised")
 
-def get_courses():
-    chrome_options = Options()
-    chrome_options.add_experimental_option("detach", True)
-    chrome_options.add_experimental_option(
-        'excludeSwitches', ['enable-logging'])
-    driver = webdriver.Chrome(service=ChromeService(
-        ChromeDriverManager().install()), options=chrome_options)
-    driver.get("https://atlas.ai.umich.edu/")
 
+def login(driver):
     login_button = WebDriverWait(driver, timeout=3).until(
         lambda d: d.find_element(by=By.LINK_TEXT, value="Log in"))
     if (login_button):
@@ -50,11 +45,20 @@ def get_courses():
     else:
         print("Log in button not found")
 
+
+def get_courses(driver):
     # navigate to Schedule Builder
-    driver.switch_to.default_content()
-    driver.get("https://atlas.ai.umich.edu/schedule-builder/")
     # get Academic Term from user
+    term_select = WebDriverWait(driver, timeout=3).until(
+        lambda d: d.find_element(by=By.CSS_SELECTOR, value=".dropdown"))
+
     # Select Academic Term form dropdown
+    term_select.click()
+    option = WebDriverWait(driver, timeout=3).until(
+        EC.presence_of_element_located((By.XPATH, "(/html/body/div[1]/div/div/div/div[2]/div[1]/div/select/option)[2]")))
+    print(option.is_displayed())
+    print(option.get_attribute("innerHTML"))
+    term_select.send_keys(Keys.ARROW_DOWN, Keys.ENTER)
     # wait for elements to render?
     # get Schedule name from user
     # select button with text== schedule name
@@ -79,9 +83,25 @@ def export_calendar(calendar_filename, calendar):
     # reopen file and add RRULE for each event
 
 
-get_courses()
+chrome_options = Options()
+chrome_options.add_experimental_option("detach", True)
+chrome_options.add_experimental_option(
+    'excludeSwitches', ['enable-logging'])
+driver = webdriver.Chrome(service=ChromeService(
+    ChromeDriverManager().install()), options=chrome_options)
 
-uniqname = "kevx"
-term = "Winter 2023"
-schedule_name = "Winter 2023 - default"
-calendar_filename = f'Course Schedule - {uniqname}: {term}.ics'
+isProductiontMode = True
+if (isProductiontMode):
+    driver.get("https://atlas.ai.umich.edu/")
+    login(driver)
+    driver.get("https://atlas.ai.umich.edu/schedule-builder/")
+else:
+    driver.get(
+        r"C:\Users\k3vnx\Documents\GitHub\atlas-to-ics\testing\Atlas-schedule-builder.html")
+
+get_courses(driver)
+
+# uniqname = "kevx"
+# term = "Winter 2023"
+# schedule_name = "Winter 2023 - default"
+# calendar_filename = f'Course Schedule - {uniqname}: {term}.ics'
