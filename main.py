@@ -119,7 +119,7 @@ def get_courses(driver, schedule_name):
                 by=By.CSS_SELECTOR, value=".section-time+ .text-xsmall").get_attribute("innerText").strip()
 
             course = Course(title, section_type, section_num,
-                            days_list, start_time, end_time)
+                            days_list, start_time, end_time, location)
             courses.append(course)
     return courses
 
