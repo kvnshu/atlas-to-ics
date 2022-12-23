@@ -9,6 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from ics import Calendar, Event
 from course import Course
 import re
+import json
 
 # check if Schedule Builder is offline for scheduled maintenance. It will return online at 7:30 AM.
 
@@ -17,14 +18,12 @@ def document_initialised(driver):
     return driver.execute_script("return initialised")
 
 
-def login(driver):
+def login(driver, uniqname, password):
     login_button = WebDriverWait(driver, timeout=3).until(
         lambda d: d.find_element(by=By.LINK_TEXT, value="Log in"))
     if (login_button):
-        print("Log in button found")
+        print("Log in button found.")
         login_button.click()
-        uniqname = input("What is your uniqname?: ")
-        password = input("What is your password?: ")
 
         uniqname_field = WebDriverWait(driver, timeout=3).until(
             lambda d: d.find_element(by=By.ID, value="login"))
@@ -44,10 +43,10 @@ def login(driver):
         WebDriverWait(driver, timeout=100).until(
             lambda d: d.find_element(by=By.CLASS_NAME, value="nav-bar-links"))
     else:
-        print("Log in button not found")
+        print("Log in button not found.")
 
 
-def get_courses(driver):
+def get_courses(driver, schedule_name):
     # navigate to Schedule Builder
     # get Academic Term from user
     term_select = WebDriverWait(driver, timeout=3).until(
@@ -55,24 +54,30 @@ def get_courses(driver):
 
     # Select Academic Term form dropdown
     term_select.click()
+
     # Check if dropdown item is present
     WebDriverWait(driver, timeout=3).until(
         EC.presence_of_element_located((By.XPATH, "(/html/body/div[1]/div/div/div/div[2]/div[1]/div/select/option)[2]")))
     term_select.send_keys(Keys.ARROW_DOWN, Keys.ENTER)
 
     # TODO: ask for schedule name
+    schedules = WebDriverWait(driver, timeout=3).until(
+        lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".text-xsmall .pill-btn-tertiary"))
+    for schedule in schedules:
+        if schedule_name in schedule.get_attribute("innerHTML"):
+            schedule.click()
+            break
 
+    # build list of courses
     courses = []
     course_cards_list = WebDriverWait(driver, timeout=3).until(
         lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".sb-course-card-container"))
     for course in course_cards_list:
         title = course.find_element(
             by=By.CSS_SELECTOR, value=".course-code-and-filter .text-xsmall").get_attribute("innerHTML")
-        print(title)
         # iterate through sections
         section_lists = WebDriverWait(course, timeout=120).until(
             lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".course-section-details"))
-        print("Number of sections: ", len(section_lists))
         for section in section_lists:
             # skip if date == "Days TBA" or section title contains "MID"
             section_type_raw = section.find_element(
@@ -149,16 +154,22 @@ chrome_options.add_experimental_option(
 driver = webdriver.Chrome(service=ChromeService(
     ChromeDriverManager().install()), options=chrome_options)
 
-isProductiontMode = 0
+f = open('secret.json')
+data = json.load(f)
+uniqname = data["uniqname"]
+password = data["password"]
+schedule_name = data["schedule_name"]
+
+isProductiontMode = 1
 if (isProductiontMode):
     driver.get("https://atlas.ai.umich.edu/")
-    login(driver)
+    login(driver, uniqname, password)
     driver.get("https://atlas.ai.umich.edu/schedule-builder/")
 else:
     driver.get(
         r"C:\Users\k3vnx\Documents\GitHub\atlas-to-ics\testing\Atlas-schedule-builder-winter2023.html")
 
-courses = get_courses(driver)
+courses = get_courses(driver, schedule_name)
 # uniqname = "kevx"
 # term = "Winter 2023"
 # schedule_name = "Winter 2023 - default"
