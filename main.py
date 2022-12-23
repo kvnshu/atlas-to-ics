@@ -7,6 +7,8 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from ics import Calendar, Event
+from course import Course
+import re
 
 # check if Schedule Builder is offline for scheduled maintenance. It will return online at 7:30 AM.
 
@@ -54,11 +56,70 @@ def get_courses(driver):
 
     # Select Academic Term form dropdown
     term_select.click()
-    option = WebDriverWait(driver, timeout=3).until(
+    # Check if dropdown item is present
+    WebDriverWait(driver, timeout=3).until(
         EC.presence_of_element_located((By.XPATH, "(/html/body/div[1]/div/div/div/div[2]/div[1]/div/select/option)[2]")))
-    print(option.is_displayed())
-    print(option.get_attribute("innerHTML"))
     term_select.send_keys(Keys.ARROW_DOWN, Keys.ENTER)
+
+    # TODO: ask for schedule name
+
+    course_cards_list = WebDriverWait(driver, timeout=3).until(
+        lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".sb-course-card-container"))
+    # print(course_cards_list)
+    # print(type(course_cards_list))
+    for course in course_cards_list:
+        title = course.find_element(
+            by=By.CSS_SELECTOR, value=".course-code-and-filter .text-xsmall").get_attribute("innerHTML")
+        print(title)
+        # iterate through sections
+        section_lists = WebDriverWait(course, timeout=120).until(
+            lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".course-section-details"))
+        print("Number of sections: ", len(section_lists))
+        for section in section_lists:
+            # skip if date == "Days TBA" or section title contains "MID"
+            section_name = section.find_element(
+                by=By.CSS_SELECTOR, value=".course-section-details .row .row .regular").get_attribute("innerHTML")
+
+            section_time = section.find_element(
+                by=By.CSS_SELECTOR, value=".section-time").get_attribute("innerHTML")
+
+            # get type
+            name_reg = r'\(([A-Z]+)\)'
+            name_match = re.search(name_reg, section_name)
+            type = name_match.group(1)
+            if type == "MID":
+                continue
+
+            # TODO get section number
+            sec_num = section.find_element
+            
+            # get time start
+            # get time end
+            # get days
+            time_reg = r'([\d]+:[\d]+\W[\w]+) - ([\d]+:[\d]+\W[\w]+) \| ([\w]+[ \w]*)'
+            time_match = re.search(time_reg, section_time)
+            start_time = time_match.group(1)
+            end_time = time_match.group(2)
+            days = time_match.group(3)
+            if days == "Days TBA":
+                continue
+            else:
+                print(days)
+                days_reg = r'[A-Z][a-z]{0,1}'
+                days_list = re.findall(days_reg, days)
+            
+
+            # get location
+            location = section.find_element(by=By.CSS_SELECTOR, value=".section-time+ .text-xsmall").get_attribute("innerText").strip()
+            
+            print(section_name)
+            print(sec_num)
+            print(type)
+            print(start_time)
+            print(end_time)
+            print(days_list)
+            print(location) 
+
     # wait for elements to render?
     # get Schedule name from user
     # select button with text== schedule name
@@ -90,14 +151,14 @@ chrome_options.add_experimental_option(
 driver = webdriver.Chrome(service=ChromeService(
     ChromeDriverManager().install()), options=chrome_options)
 
-isProductiontMode = True
+isProductiontMode = False
 if (isProductiontMode):
     driver.get("https://atlas.ai.umich.edu/")
     login(driver)
     driver.get("https://atlas.ai.umich.edu/schedule-builder/")
 else:
     driver.get(
-        r"C:\Users\k3vnx\Documents\GitHub\atlas-to-ics\testing\Atlas-schedule-builder.html")
+        r"C:\Users\k3vnx\Documents\GitHub\atlas-to-ics\testing\Atlas-schedule-builder-winter2023.html")
 
 get_courses(driver)
 
