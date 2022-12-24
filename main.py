@@ -11,7 +11,7 @@ from course import Course
 import re
 import json
 import arrow
-
+import os
 # check if Schedule Builder is offline for scheduled maintenance. It will return online at 7:30 AM.
 
 
@@ -151,36 +151,53 @@ def create_calendar(courses, uniqname, term_start_date_string):
             case "F":
                 course_first_weekday = 4
 
-        course_start_time = arrow.Arrow.strptime(course.timeStart, "%I:%M %p")
+        course_begin_time = arrow.Arrow.strptime(course.timeStart, "%I:%M %p")
         course_end_time = arrow.Arrow.strptime(course.timeEnd, "%I:%M %p")
 
-        course_start = arrow.Arrow(year=term_start_date_notz.year,
+        course_begin = arrow.Arrow(year=term_start_date_notz.year,
                                    month=term_start_date_notz.month,
                                    day=term_start_date_notz.day,
-                                   hour=course_start_time.time().hour,
-                                   minute=course_start_time.time().minute,
+                                   hour=course_begin_time.time().hour,
+                                   minute=course_begin_time.time().minute,
                                    tzinfo='US/Eastern')
         
+        # TODO: fix shifting days
         if course_first_weekday - term_start_date.weekday() < 0:
-            course_start.shift(
+            course_begin.shift(
                 days=+(7+course_first_weekday - term_start_date.weekday()))
         else:
-            course_start.shift(
+            course_begin.shift(
                 days=+(course_first_weekday - term_start_date.weekday()))
+
+        course_end = arrow.Arrow(year=course_begin.year,
+                                 month=course_begin.month,
+                                 day=course_begin.day,
+                                 hour=course_end_time.time().hour,
+                                 minute=course_end_time.time().minute,
+                                 tzinfo='US/Eastern')
+        e.begin = course_begin
+        e.end = course_end
         
-        course_end = arrow.Arrow(year=course_start.year,
-                                   month=course_start.month,
-                                   day=course_start.day,
-                                   hour=course_end_time.time().hour,
-                                   minute=course_end_time.time().minute,
-                                   tzinfo='US/Eastern')
+        # TODO: add attribute for recurrence
+        
 
         c.events.add(e)
-    
-    with open(f"UM Classes - {uniqname}.iCal", 'w') as my_file:
-        my_file.writelines(c.serialize_iter())
 
-    # reopen file and add RRULE for each event
+    with open("temp_cal.txt", 'w') as f:
+        f.writelines(c.serialize_iter())
+    with open("temp_cal.txt", "r") as f, open(f"UM Classes - {uniqname}.ics", "w") as outfile:
+        for i in f.readlines():
+            if not i.strip():
+                continue
+            if i:
+                outfile.write(i)
+    os.remove("temp_cal.txt")
+
+# print(c.serialize_iter())
+
+# f.write(c.serialize())
+
+# reopen file and add RRULE for each event
 
 
 chrome_options = Options()
