@@ -129,9 +129,8 @@ def get_courses(driver, schedule_name):
 
 
 def create_calendar(courses, uniqname, term_start_date_string):
+
     term_start_date_notz = arrow.get(term_start_date_string, "MM-DD-YYYY")
-    term_start_date = arrow.Arrow(year=term_start_date_notz.year,
-                                  month=term_start_date_notz.month, day=term_start_date_notz.day, tzinfo='US/Eastern')
     c = Calendar()
     for course in courses:
         # print(course.timeStart)
@@ -139,18 +138,6 @@ def create_calendar(courses, uniqname, term_start_date_string):
         event_name = f"{course.name}-{course.secNum}: {course.type}"
         e.name = event_name
         e.location = course.location
-
-        match course.days[0]:
-            case "M":
-                course_first_weekday = 0
-            case "T":
-                course_first_weekday = 1
-            case "W":
-                course_first_weekday = 2
-            case "Th":
-                course_first_weekday = 3
-            case "F":
-                course_first_weekday = 4
 
         course_begin_time = arrow.Arrow.strptime(course.timeStart, "%I:%M %p")
         course_end_time = arrow.Arrow.strptime(course.timeEnd, "%I:%M %p")
@@ -162,13 +149,36 @@ def create_calendar(courses, uniqname, term_start_date_string):
                                    minute=course_begin_time.time().minute,
                                    tzinfo='US/Eastern')
 
-        # TODO: fix shifting days
-        if course_first_weekday - term_start_date.weekday() < 0:
-            course_begin.shift(
-                days=+(7+course_first_weekday - term_start_date.weekday()))
+        # TODO: handle case where term start date is in between first and second day of a multi-day weekly course
+        # create list of weekdays as num
+        weekdays_num = []
+        for day in course.days:
+            match day:
+                case "M":
+                    weekdays_num.append(0)
+                case "T":
+                    weekdays_num.append(1)
+                case "W":
+                    weekdays_num.append(2)
+                case "Th":
+                    weekdays_num.append(3)
+                case "F":
+                    weekdays_num.append(4)
+        
+        # find min "largest" weekday
+        course_first_weekday = weekdays_num[0]
+        for n in reversed(weekdays_num):
+            if n - term_start_date_notz.weekday() >= 0:
+                course_first_weekday = n
+
+        print("Course first day: ", course_first_weekday)
+
+        if course_first_weekday - term_start_date_notz.weekday() < 0:
+            course_begin = course_begin.shift(
+                days=(7+course_first_weekday - term_start_date_notz.weekday()))
         else:
-            course_begin.shift(
-                days=+(course_first_weekday - term_start_date.weekday()))
+            course_begin = course_begin.shift(
+                days=(course_first_weekday - term_start_date_notz.weekday()))
 
         course_end = arrow.Arrow(year=course_begin.year,
                                  month=course_begin.month,
@@ -179,6 +189,7 @@ def create_calendar(courses, uniqname, term_start_date_string):
         e.begin = course_begin
         e.end = course_end
 
+        # get days to repeat
         days = []
         for day in course.days:
             match day:
@@ -193,11 +204,8 @@ def create_calendar(courses, uniqname, term_start_date_string):
                 case "F":
                     days.append("FR")
         days_csv = ",".join(days)
-
         e.extra.append(ContentLine(
-            name="RRULE", value="FREQ=WEEKLY;COUNT=15,WKST=SU,BYDAY=" + days_csv))
-
-        # TODO: add attribute for recurrence
+            name="RRULE", value=f"FREQ=WEEKLY;COUNT={15*len(course.days)};WKST=SU;BYDAY={days_csv}"))
 
         c.events.add(e)
 
@@ -209,6 +217,7 @@ def create_calendar(courses, uniqname, term_start_date_string):
                 continue
             if i:
                 outfile.write(i)
+    print(f"\"UM Classes - {uniqname}.ics\" exported")
     os.remove("temp_cal.txt")
 
 # print(c.serialize_iter())
