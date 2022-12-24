@@ -7,6 +7,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from ics import Calendar, Event
+from ics.grammar.parse import ContentLine
 from course import Course
 import re
 import json
@@ -160,7 +161,7 @@ def create_calendar(courses, uniqname, term_start_date_string):
                                    hour=course_begin_time.time().hour,
                                    minute=course_begin_time.time().minute,
                                    tzinfo='US/Eastern')
-        
+
         # TODO: fix shifting days
         if course_first_weekday - term_start_date.weekday() < 0:
             course_begin.shift(
@@ -177,9 +178,26 @@ def create_calendar(courses, uniqname, term_start_date_string):
                                  tzinfo='US/Eastern')
         e.begin = course_begin
         e.end = course_end
-        
+
+        days = []
+        for day in course.days:
+            match day:
+                case "M":
+                    days.append("MO")
+                case "T":
+                    days.append("TU")
+                case "W":
+                    days.append("WE")
+                case "Th":
+                    days.append("TH")
+                case "F":
+                    days.append("FR")
+        days_csv = ",".join(days)
+
+        e.extra.append(ContentLine(
+            name="RRULE", value="FREQ=WEEKLY;COUNT=15,WKST=SU,BYDAY=" + days_csv))
+
         # TODO: add attribute for recurrence
-        
 
         c.events.add(e)
 
