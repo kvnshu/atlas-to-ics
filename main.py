@@ -10,6 +10,7 @@ from ics import Calendar, Event
 from course import Course
 import re
 import json
+import arrow
 
 # check if Schedule Builder is offline for scheduled maintenance. It will return online at 7:30 AM.
 
@@ -19,6 +20,7 @@ def document_initialised(driver):
 
 
 def login(driver, uniqname, password):
+    # TODO: prevent usage inside maintenence hours
     login_button = WebDriverWait(driver, timeout=3).until(
         lambda d: d.find_element(by=By.LINK_TEXT, value="Log in"))
     if (login_button):
@@ -60,7 +62,7 @@ def get_courses(driver, schedule_name):
         EC.presence_of_element_located((By.XPATH, "(/html/body/div[1]/div/div/div/div[2]/div[1]/div/select/option)[2]")))
     term_select.send_keys(Keys.ARROW_DOWN, Keys.ENTER)
 
-    # TODO: ask for schedule name
+    # Get specified schedule
     schedules = WebDriverWait(driver, timeout=3).until(
         lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".text-xsmall .pill-btn-tertiary"))
     for schedule in schedules:
@@ -68,13 +70,15 @@ def get_courses(driver, schedule_name):
             schedule.click()
             break
 
+    # TODO wait for all courses to load with data
+
     # build list of courses
     courses = []
     course_cards_list = WebDriverWait(driver, timeout=3).until(
         lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".sb-course-card-container"))
     for course in course_cards_list:
         title = course.find_element(
-            by=By.CSS_SELECTOR, value=".course-code-and-filter .text-xsmall").get_attribute("innerHTML")
+            by=By.CSS_SELECTOR, value=".course-code-and-filter .text-xsmall").get_attribute("innerHTML").strip()
         # iterate through sections
         section_lists = WebDriverWait(course, timeout=120).until(
             lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".course-section-details"))
@@ -93,7 +97,6 @@ def get_courses(driver, schedule_name):
             if section_type == "MID":
                 continue
 
-            # TODO get section number
             section_name = section.find_element(
                 by=By.CSS_SELECTOR, value=".dropdown-label").get_attribute("innerHTML")
             section_reg = r'\W(\d{3})\W'
@@ -123,26 +126,59 @@ def get_courses(driver, schedule_name):
             courses.append(course)
     return courses
 
-    # wait for elements to render?
-    # TODO: prevent usage inside maintenence hours
-    # select button with text== schedule name
-    events = []
-    # iterate through course cards (and course section) and get class information
-    # iterate through course sections and create events, add to ics object
-    # driver.quit()
 
-
-def build_calendar(courses):
+def create_calendar(courses, uniqname, term_start_date_string):
+    term_start_date_notz = arrow.get(term_start_date_string, "MM-DD-YYYY")
+    term_start_date = arrow.Arrow(year=term_start_date_notz.year,
+                                  month=term_start_date_notz.month, day=term_start_date_notz.day, tzinfo='US/Eastern')
     c = Calendar()
     for course in courses:
-        e = Event(course.name)
-        c.add(e)
-    return c
+        # print(course.timeStart)
+        e = Event()
+        event_name = f"{course.name}-{course.secNum}: {course.type}"
+        e.name = event_name
+        e.location = course.location
 
+        match course.days[0]:
+            case "M":
+                course_first_weekday = 0
+            case "T":
+                course_first_weekday = 1
+            case "W":
+                course_first_weekday = 2
+            case "Th":
+                course_first_weekday = 3
+            case "F":
+                course_first_weekday = 4
 
-def export_calendar(calendar_filename, calendar):
-    with open(calendar_filename, 'w') as f:
-        f.writelines(calendar.serialize_iter())
+        course_start_time = arrow.Arrow.strptime(course.timeStart, "%I:%M %p")
+        course_end_time = arrow.Arrow.strptime(course.timeEnd, "%I:%M %p")
+
+        course_start = arrow.Arrow(year=term_start_date_notz.year,
+                                   month=term_start_date_notz.month,
+                                   day=term_start_date_notz.day,
+                                   hour=course_start_time.time().hour,
+                                   minute=course_start_time.time().minute,
+                                   tzinfo='US/Eastern')
+        
+        if course_first_weekday - term_start_date.weekday() < 0:
+            course_start.shift(
+                days=+(7+course_first_weekday - term_start_date.weekday()))
+        else:
+            course_start.shift(
+                days=+(course_first_weekday - term_start_date.weekday()))
+        
+        course_end = arrow.Arrow(year=course_start.year,
+                                   month=course_start.month,
+                                   day=course_start.day,
+                                   hour=course_end_time.time().hour,
+                                   minute=course_end_time.time().minute,
+                                   tzinfo='US/Eastern')
+
+        c.events.add(e)
+    
+    with open(f"UM Classes - {uniqname}.iCal", 'w') as my_file:
+        my_file.writelines(c.serialize_iter())
 
     # reopen file and add RRULE for each event
 
@@ -159,18 +195,17 @@ data = json.load(f)
 uniqname = data["uniqname"]
 password = data["password"]
 schedule_name = data["schedule_name"]
+term_start_date = data["term_start_date"]
 
-isProductiontMode = 1
-if (isProductiontMode):
+isProductionMode = 0
+if (isProductionMode):
     driver.get("https://atlas.ai.umich.edu/")
     login(driver, uniqname, password)
     driver.get("https://atlas.ai.umich.edu/schedule-builder/")
 else:
     driver.get(
         r"C:\Users\k3vnx\Documents\GitHub\atlas-to-ics\testing\Atlas-schedule-builder-winter2023.html")
-
 courses = get_courses(driver, schedule_name)
-# uniqname = "kevx"
-# term = "Winter 2023"
-# schedule_name = "Winter 2023 - default"
-# calendar_filename = f'Course Schedule - {uniqname}: {term}.ics'
+driver.quit()
+
+create_calendar(courses, uniqname, term_start_date)
