@@ -1,3 +1,5 @@
 /myenv
 /testing
 secret.json
+__pycache__
+*.ics
