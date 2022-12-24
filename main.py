@@ -44,8 +44,10 @@ def login(driver, uniqname, password):
         duo_button = WebDriverWait(driver, timeout=3).until(
             lambda d: d.find_element(by=By.CLASS_NAME, value="auth-button"))
         duo_button.click()
+        print("Duo push sent to phone.")
         WebDriverWait(driver, timeout=100).until(
             lambda d: d.find_element(by=By.CLASS_NAME, value="nav-bar-links"))
+        print("Login successful.")
     else:
         print("Log in button not found.")
 
@@ -58,12 +60,10 @@ def get_courses(driver, schedule_name):
 
     # Select Academic Term form dropdown
     term_select.click()
-
     # Check if dropdown item is present
     WebDriverWait(driver, timeout=3).until(
         EC.presence_of_element_located((By.XPATH, "(/html/body/div[1]/div/div/div/div[2]/div[1]/div/select/option)[2]")))
     term_select.send_keys(Keys.ARROW_DOWN, Keys.ENTER)
-
     # Get specified schedule
     schedules = WebDriverWait(driver, timeout=3).until(
         lambda d: d.find_elements(by=By.CSS_SELECTOR, value=".text-xsmall .pill-btn-tertiary"))
@@ -71,6 +71,7 @@ def get_courses(driver, schedule_name):
         if schedule_name in schedule.get_attribute("innerHTML"):
             schedule.click()
             break
+    print(f"Schedule \"{schedule_name}\" found.")
 
     # TODO wait for all courses to load with data
 
@@ -126,6 +127,7 @@ def get_courses(driver, schedule_name):
             course = Course(title, section_type, section_num,
                             days_list, start_time, end_time, location)
             courses.append(course)
+    print("Finished scraping courses.")
     return courses
 
 
@@ -210,12 +212,6 @@ def create_calendar(courses, uniqname, term_start_date_string):
     print(f"\"UM Classes - {uniqname}.ics\" exported")
     os.remove("temp_cal.txt")
 
-chrome_options = Options()
-chrome_options.add_experimental_option("detach", True)
-chrome_options.add_experimental_option(
-    'excludeSwitches', ['enable-logging'])
-driver = webdriver.Chrome(service=ChromeService(
-    ChromeDriverManager().install()), options=chrome_options)
 
 f = open('secret.json')
 data = json.load(f)
@@ -224,7 +220,19 @@ password = data["password"]
 schedule_name = data["schedule_name"]
 term_start_date = data["term_start_date"]
 
-isProductionMode = 0
+
+chrome_options = Options()
+chrome_options.add_experimental_option("detach", True)
+chrome_options.add_experimental_option(
+    'excludeSwitches', ['enable-logging'])
+chrome_options.add_argument("--window-size=1920,1080")
+chrome_options.add_argument('--ignore-certificate-errors')
+chrome_options.add_argument('--allow-running-insecure-content')
+chrome_options.add_argument('--headless')
+driver = webdriver.Chrome(service=ChromeService(
+    ChromeDriverManager().install()), options=chrome_options)
+
+isProductionMode = 1
 if (isProductionMode):
     driver.get("https://atlas.ai.umich.edu/")
     login(driver, uniqname, password)
