@@ -6,3 +6,4 @@ class Course:
         self.days = days
         self.timeStart = timeStart
         self.timeEnd = timeEnd
+        self.location = location
