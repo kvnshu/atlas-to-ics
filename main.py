@@ -139,6 +139,38 @@ def create_calendar(courses, uniqname, term_start_date_string):
         e.name = event_name
         e.location = course.location
 
+        # create list of weekdays as num
+        # get days to repeat
+        weekdays_num = []
+        days = []
+        for day in course.days:
+            match day:
+                case "M":
+                    weekdays_num.append(0)
+                    days.append("MO")
+                case "T":
+                    weekdays_num.append(1)
+                    days.append("TU")
+                case "W":
+                    weekdays_num.append(2)
+                    days.append("WE")
+                case "Th":
+                    weekdays_num.append(3)
+                    days.append("TH")
+                case "F":
+                    weekdays_num.append(4)
+                    days.append("FR")
+        
+        days_csv = ",".join(days)
+        e.extra.append(ContentLine(
+            name="RRULE", value=f"FREQ=WEEKLY;COUNT={15*len(course.days)};WKST=SU;BYDAY={days_csv}"))
+        # find min "largest" weekday
+        course_first_weekday = weekdays_num[0]
+        for n in reversed(weekdays_num):
+            if n - term_start_date_notz.weekday() >= 0:
+                course_first_weekday = n
+
+        # shift course_begin and course_end
         course_begin_time = arrow.Arrow.strptime(course.timeStart, "%I:%M %p")
         course_end_time = arrow.Arrow.strptime(course.timeEnd, "%I:%M %p")
 
@@ -148,31 +180,6 @@ def create_calendar(courses, uniqname, term_start_date_string):
                                    hour=course_begin_time.time().hour,
                                    minute=course_begin_time.time().minute,
                                    tzinfo='US/Eastern')
-
-        # TODO: handle case where term start date is in between first and second day of a multi-day weekly course
-        # create list of weekdays as num
-        weekdays_num = []
-        for day in course.days:
-            match day:
-                case "M":
-                    weekdays_num.append(0)
-                case "T":
-                    weekdays_num.append(1)
-                case "W":
-                    weekdays_num.append(2)
-                case "Th":
-                    weekdays_num.append(3)
-                case "F":
-                    weekdays_num.append(4)
-        
-        # find min "largest" weekday
-        course_first_weekday = weekdays_num[0]
-        for n in reversed(weekdays_num):
-            if n - term_start_date_notz.weekday() >= 0:
-                course_first_weekday = n
-
-        print("Course first day: ", course_first_weekday)
-
         if course_first_weekday - term_start_date_notz.weekday() < 0:
             course_begin = course_begin.shift(
                 days=(7+course_first_weekday - term_start_date_notz.weekday()))
@@ -189,24 +196,7 @@ def create_calendar(courses, uniqname, term_start_date_string):
         e.begin = course_begin
         e.end = course_end
 
-        # get days to repeat
-        days = []
-        for day in course.days:
-            match day:
-                case "M":
-                    days.append("MO")
-                case "T":
-                    days.append("TU")
-                case "W":
-                    days.append("WE")
-                case "Th":
-                    days.append("TH")
-                case "F":
-                    days.append("FR")
-        days_csv = ",".join(days)
-        e.extra.append(ContentLine(
-            name="RRULE", value=f"FREQ=WEEKLY;COUNT={15*len(course.days)};WKST=SU;BYDAY={days_csv}"))
-
+        
         c.events.add(e)
 
     with open("temp_cal.txt", 'w') as f:
