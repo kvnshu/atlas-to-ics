@@ -22,7 +22,8 @@ python -m pip install -r requirements.txt
 ```
 python main.py
 ```
-6. Import ics file into your gcal
+5. An .ics file should have been created in the same directory as `main.py`
+6. Import .ics file into your calendar
 
 # Limitations
 - The scraper won't work if Atlas or Atlas Schedule Builder is down.
