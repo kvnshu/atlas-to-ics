@@ -13,7 +13,8 @@ import re
 import json
 import arrow
 import os
-# check if Schedule Builder is offline for scheduled maintenance. It will return online at 7:30 AM.
+
+# TODO: check if Schedule Builder is offline for scheduled maintenance. It will return online at 7:30 AM.
 
 
 def document_initialised(driver):
@@ -160,7 +161,7 @@ def create_calendar(courses, uniqname, term_start_date_string):
                 case "F":
                     weekdays_num.append(4)
                     days.append("FR")
-        
+
         days_csv = ",".join(days)
         e.extra.append(ContentLine(
             name="RRULE", value=f"FREQ=WEEKLY;COUNT={15*len(course.days)};WKST=SU;BYDAY={days_csv}"))
@@ -196,7 +197,6 @@ def create_calendar(courses, uniqname, term_start_date_string):
         e.begin = course_begin
         e.end = course_end
 
-        
         c.events.add(e)
 
     with open("temp_cal.txt", 'w') as f:
@@ -209,13 +209,6 @@ def create_calendar(courses, uniqname, term_start_date_string):
                 outfile.write(i)
     print(f"\"UM Classes - {uniqname}.ics\" exported")
     os.remove("temp_cal.txt")
-
-# print(c.serialize_iter())
-
-# f.write(c.serialize())
-
-# reopen file and add RRULE for each event
-
 
 chrome_options = Options()
 chrome_options.add_experimental_option("detach", True)
