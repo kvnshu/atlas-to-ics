@@ -1,5 +1,5 @@
 # Atlas to .ics
-Export class schedules from atlas.ai.umich.edu as an ics file
+Export class schedules from atlas.ai.umich.edu as an .ics file
 
 # How to use
 1. Clone this repo locally
@@ -18,12 +18,12 @@ python3 -m venv venv/
 source venv/bin/activate
 python -m pip install -r requirements.txt
 ```
-5. Run `main.py` in your terminal:
+5. Run `main.py` in your terminal. Be sure to have your phone nearby so that you will be able to verify the Duo Push request.
 ```
 python main.py
 ```
-5. An .ics file should have been created in the same directory as `main.py`
-6. Import .ics file into your calendar
+6. An .ics file should have been created in the same directory as `main.py`
+7. Import .ics file into your calendar
 
 # Limitations
 - The scraper won't work if Atlas or Atlas Schedule Builder is down.
