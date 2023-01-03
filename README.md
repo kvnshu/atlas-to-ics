@@ -27,4 +27,4 @@ python main.py
 
 # Limitations
 - The scraper won't work if Atlas or Atlas Schedule Builder is down.
-- The scraper doesn't take into account breaks or holidays. You'll have to remove classes for fall/spring break.
+- The scraper doesn't take into account breaks, holidays, or other edge cases. You'll have to remove classes for fall/spring break.
