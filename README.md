@@ -4,8 +4,8 @@ Export class schedules from atlas.ai.umich.edu as an .ics file
 # How to use
 1. [Clone this GitHub repository locally](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
 2. You'll also need [Python](https://www.python.org/) on your computer in order to run this program.
-3. Rename secret.json.template to secret.json
-4. Update the values in secret.json as necessary. `password` should set as your password to U-M Weblogin.
+3. Rename `secret.json.template` to `secret.json`
+4. Update the values in `secret.json` as necessary. `password` should set as your password to U-M Weblogin.
 5. Create a virtual Python environment inside the root directory and install dependencies in the active virtual environment: 
 ```
 \\For Windows PowerShell:
