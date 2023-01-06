@@ -136,7 +136,6 @@ def get_courses(driver, schedule_name):
 
 
 def create_calendar(courses, uniqname, term_start_date_string):
-
     term_start_date_notz = arrow.get(term_start_date_string, "MM-DD-YYYY")
     c = Calendar()
     for course in courses:
@@ -205,15 +204,16 @@ def create_calendar(courses, uniqname, term_start_date_string):
 
         c.events.add(e)
 
+    filename = f"UM Classes - {uniqname}.ics"
     with open("temp_cal.txt", 'w') as f:
         f.writelines(c.serialize_iter())
-    with open("temp_cal.txt", "r") as f, open(f"UM Classes - {uniqname}.ics", "w") as outfile:
+    with open("temp_cal.txt", "r") as f, open(filename, "w") as outfile:
         for i in f.readlines():
             if not i.strip():
                 continue
             if i:
                 outfile.write(i)
-    print(f"\"UM Classes - {uniqname}.ics\" exported")
+    print(f"\"{filename}\" exported")
     os.remove("temp_cal.txt")
 
 
