@@ -89,7 +89,7 @@ def get_courses(driver, schedule_name):
             # skip if date == "Days TBA" or section title contains "MID"
             section_type_raw = section.find_element(
                 by=By.CSS_SELECTOR, value=".course-section-details .row .row .regular").get_attribute("innerHTML")
-            
+
             # get type
             name_reg = r'\(([A-Z]+)\)'
             name_match = re.search(name_reg, section_type_raw)
@@ -101,12 +101,13 @@ def get_courses(driver, schedule_name):
             section_reg = r'\W(\d{3})\W'
             section_match = re.search(section_reg, section_name)
             section_num = section_match.group(1)
-            
+
             try:
                 section_time = section.find_element(
                     by=By.CSS_SELECTOR, value=".section-time").get_attribute("innerHTML")
             except:
-                print(f"Program crashed. No section selected for {section_name}-{section_type}.")
+                print(
+                    f"Program crashed. No section selected for {section_name}-{section_type}.")
                 quit()
 
             # get time start
