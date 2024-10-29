@@ -1,3 +1,6 @@
+# Update Oct 2024:
+Atlas has since implemented an "import to gcal" feature, so this script is unnecessary.
+
 # Atlas to .ics
 Export class schedules from atlas.ai.umich.edu as an .ics file
 
@@ -30,4 +33,4 @@ python main.py
 - The scraper won't work if Atlas or Atlas Schedule Builder is down.
 - The scraper doesn't take into account breaks, holidays, or other edge cases. You'll have to remove classes for fall/spring break.
 
-If you're interested, I also wrote a [Medium Post](https://www.python.org/downloads/) about how I built this webscraper.
+If you're interested, I also wrote a [Medium Post](https://medium.com/@kvnshu/coding-atlas-to-ics-bbbfbefa2be6) about how I built this webscraper.
